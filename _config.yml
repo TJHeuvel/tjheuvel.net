@@ -17,7 +17,16 @@ github_username:  tjheuvel
 
 # Build settings
 markdown: kramdown
+highlighter: pygments
 
 # Custom
 
 permalink: "/:title"
+
+defaults:
+  -
+    scope:
+      path: "" # an empty string here means all files in the project
+      type: "posts" # previously `post` in Jekyll 2.2.
+    values:
+      layout: "post"
