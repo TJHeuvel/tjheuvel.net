@@ -3,7 +3,7 @@ title:  "What every game programmer should know about vectors"
 date:   2015-11-18 10:34:17 +0200
 categories: programming math vectors
 ---
-
+<marquee>WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS</marquee>
 Mathmatics in game development is usually conceived as a difficult subject. While ths is very true for concepts such as matrixes and quaternions, a lot of it can be abstracted and subsituted with Vectors. Luckily vectors are much more simple, often taught in school and easy to visualise. This article explains several use cases you'll encounter while making games, and ways to solve them.
 
 ## What is a vector, and why do we need them
@@ -96,6 +96,8 @@ float length(Vector2 a)
     return Math.Sqrt(a.x*b.x + a.y*b.y);
 }
 {% endhighlight %}
+
+> In some situations where you dont need to know the exact distance you can omit the Square root.
 
 ## Moving towards another enity
 
