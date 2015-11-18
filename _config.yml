@@ -17,7 +17,6 @@ github_username:  tjheuvel
 
 # Build settings
 markdown: kramdown
-highlighter: pygments
 
 # Custom
 

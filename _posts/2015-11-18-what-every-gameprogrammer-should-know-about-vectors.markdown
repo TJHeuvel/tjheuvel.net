@@ -1,24 +1,24 @@
 ---
-layout: default
-
 title:  "What every game programmer should know about vectors"
 date:   2015-11-18 10:34:17 +0200
-categories: programming math vector
+categories: programming math vectors
 ---
 
-This article tries to explain vector math related to game development. This article is written by a mere mortal, and might contain errors and shortcuts. 
+Mathmatics in game development is usually conceived as a difficult subject. While ths is very true for concepts such as matrixes and quaternions, a lot of it can be abstracted and subsituted with Vectors. Luckily vectors are much more simple, often taught in school and easy to visualise. This article explains several use cases you'll encounter while making games, and ways to solve them.
 
-## What is a vector?
+## What is a vector, and why do we need them
 
-A vector is a list of floats. The amount depends on your dimensions, for example an Vector2 has x/y while a Vector3 has x/y/z. Conceptually a vector might be 2 different things.
+In order to simulate a game world we need to be able to give things a position. Imagine a huge grid with all things.
+
+A vector can represent two distinct things; positions and directions. Both are in our amazing grid. 
+
+When you're making a 2D game you will mostly use a vector with the X and Y components, when working in 3d there is a third Z component added. Luckily most of the mathmatics easily convert to and from 3d.
+
+In this tutorial we will be covering 2D only, and use Vector2. Luckily its easy to upgrade the math to 3d.
 
 > People that are much smarter then me prefer to call floats [Scalars][scalars]. I however do not.
 
-## Why do we need vectors?
-
-To represent a location, dummy!
-
-## How do i use them in my game?
+## How do i use them in my game
 What follows is a list of common scenarios in a 2d game. Most math is applicable in 3d too.
 
 We're assuming the following base class. Every entity must have some sort of position defined by an X and Y. Whenever the `Update` method is called we will move him.
@@ -28,24 +28,22 @@ class Entity
 {
     public Vector2 Position;
 
-    void Update()
-    {
-
-    }
+    void Update();
 }
 {% endhighlight %}
 
-### Moving your guy
+## Moving our entity
 
-It might sound simple, but you can add vectors and multiply vectors.
+Alright, we have an entity who has a position in the world lets try to move him around. 
+
+You can add a vector to another vector to displace them, for example adding `1,0` will make him move right one unit. Its also possible to multiply or scale a vector, which does exactly what you think.
 
 {% highlight C# %}
-Vector2 position;
-float speed;
+float speed = 5f;
 
 void Update() 
 {
-    this.Position += new Vector2(1,0) * speed *deltaTime;
+    this.Position += new Vector2(1,0) * speed * deltaTime;
 }
 {% endhighlight %}
 
@@ -53,30 +51,19 @@ After this we multiply it by our speed.
 
 You'll also notice we also multiply the displacement by a `deltaTime`, which is the time in seconds since the last Update. This makes sure we are moving at 1 unit per second and not per frame, because frame rates can differ greatly. It is very important to make sure your game is independant of the frame rate!
 
-### Rotating our guy
+## Rotating our guy
 
-Since moving only right would make for a pretty crabby game, lets see if we can free our protagonist and make him move in multiple directions. We're aiming for a classic 2D top down experience like GTA2
+Since moving only right would make for a pretty crabby game, lets see if we can free our protagonist and make him move in multiple directions. We're aiming for a classic 2D top down experience like GTA2.
+
+We will use sin and cos to create a vector pointing in the direction we are facing in using the `rotation` variable. This is the rotation in radians, which go from 0 to pi * 2.
 
 {% highlight C# %}
 float rotation;
 
 void Update() 
 {
-    if(isKeyDown(Keys.Left))
-        rotation += Math.PI * deltaTime;
-    else if(isKeyDown(Keys.Right))
-        rotation -= Math.PI * deltaTime;
-
-    Vector2 delta;
-
-    if(isKeyDown(Keys.Up))
-        delta = getForward();
-    else if(isKeyDown(Keys.Down))
-        delta = -getForward();
-    else
-        delta = Vector2.Zero;
-
-    this.Position += delta * deltaTime;
+    rotation += Math.PI * 2f * deltaTime;
+    this.Position += getForward() * speed * deltaTime;
 }
 
 Vector2 getForward() 
@@ -89,7 +76,13 @@ Vector2 getForward()
 
 {% endhighlight %}
 
-### Distance between another entity
+In the example we constantly rotate, at a speed of 1 revolution a second. Though in your game you most likely want to use input.
+
+> You can also invert direction vectors to go the opposite way. So if your character needs to move back just use `-getForward()`!
+
+## Distance between vectors
+
+Its often useful to know how far entities are away from each other.
 
 {% highlight C# %}
 
@@ -104,9 +97,11 @@ float length(Vector2 a)
 }
 {% endhighlight %}
 
-### Moving towards another enity
+## Moving towards another enity
 
-Say we want to move an enemy towards our hero, how would we do that?
+Say we want to move an enemy towards our hero at a speed of 5 units per second, how would we do that?
+
+Firstly we need to get the direction between me and my target and then multiply this by the speed. Basicly you take 1% out of it.
 
 {% highlight C# %}
 
@@ -123,7 +118,7 @@ Vector2 normalize(Vector2 a)
 {% endhighlight %}
 
 
-### Am i looking towards another guy?
+## Am i looking towards another guy?
 
 The last trick we'll pull out of our hat is checking to see if i am looking towards another entity. What we are interested in is the angle between the direction we are looking in (our `getForward`) and the direction between us and the other guy.
 
@@ -147,6 +142,8 @@ float dot(Vector2 a, Vector2 b)
 }
 
 {% endhighlight %}
+
+The dot product is an easy computationally not expensive way to get the angle. Some lighting models depend on just this factor, blinnpon works by dot(viewdirection, normal) or something. 
 
 This concludes the first post!
 

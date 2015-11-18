@@ -239,4 +239,23 @@
             font-size: 18px;
         }
     }
+
+}
+
+
+.post-index {
+    padding:10px 10px 10px 10px;
+    position:fixed;
+    
+    left:0px;
+    top:20%;
+    border:1px solid #CCC;   
+    border-left:none;
+
+    opacity:.7;
+    transition:opacity .1s ease-in-out;
+
+    &:hover {
+        opacity:1;
+    }
 }
