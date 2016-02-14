@@ -1,14 +1,14 @@
 ---
 title:  "What every game programmer should know about vectors"
 date:   2015-11-18 10:34:17 +0200
-categories: programming math vectors
+categories: programming math vectors gamedev
 ---
-<marquee>WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS WORK IN PROGRESS</marquee>
-Mathmatics in game development is usually conceived as a difficult subject. While ths is very true for concepts such as matrixes and quaternions, a lot of it can be abstracted and subsituted with Vectors. Luckily vectors are much more simple, often taught in school and easy to visualise. This article explains several use cases you'll encounter while making games, and ways to solve them.
+
+Mathmatics in game development is usually thought of as a difficult subject, and while this is might be true for matrixes and quaternions there is a whole lot about vectors that doesnt have to be for wizards only. They are much simpler, often taught in school and easy to visualise. This article explains several use cases you'll encounter while making games, and ways to solve them.
 
 ## What is a vector, and why do we need them
 
-In order to simulate a game world we need to be able to give things a position. Imagine a huge grid with all things.
+In order to simulate a game world we need to be able to give objects a position. We borrow a system called a [Cartesian Coordinate][cart-coords] system
 
 A vector can represent two distinct things; positions and directions. Both are in our amazing grid. 
 
@@ -55,7 +55,7 @@ You'll also notice we also multiply the displacement by a `deltaTime`, which is 
 
 Since moving only right would make for a pretty crabby game, lets see if we can free our protagonist and make him move in multiple directions. We're aiming for a classic 2D top down experience like GTA2.
 
-We will use sin and cos to create a vector pointing in the direction we are facing in using the `rotation` variable. This is the rotation in radians, which go from 0 to pi * 2.
+We will use sin and cos to create a happy little vector pointing in the direction we are facing in using the `rotation` variable. This is the rotation in radians, which go from 0 to pi * 2.
 
 {% highlight C# %}
 float rotation;
@@ -76,9 +76,8 @@ Vector2 getForward()
 
 {% endhighlight %}
 
-In the example we constantly rotate, at a speed of 1 revolution a second. Though in your game you most likely want to use input.
+In the example we constantly rotate, at a speed of 1 revolution a second because 360 degrees is 2 times pi. In your game you'd most likely want to rotate according to the users input though.
 
-> You can also invert direction vectors to go the opposite way. So if your character needs to move back just use `-getForward()`!
 
 ## Distance between vectors
 
@@ -105,6 +104,8 @@ Say we want to move an enemy towards our hero at a speed of 5 units per second, 
 
 Firstly we need to get the direction between me and my target and then multiply this by the speed. Basicly you take 1% out of it.
 
+A normalized vector is a happy special little vector that always has the length of one.
+
 {% highlight C# %}
 
 void moveTowards(Entity target, float speed = 1f)
@@ -119,6 +120,7 @@ Vector2 normalize(Vector2 a)
 
 {% endhighlight %}
 
+> You can also invert direction vectors to go the opposite way. To move away from the target just use the opposite vector, -normalize(a,b).
 
 ## Am i looking towards another guy?
 
@@ -150,3 +152,4 @@ The dot product is an easy computationally not expensive way to get the angle. S
 This concludes the first post!
 
 [scalars]: http://en.wikipedia.org/wiki/Scalar_(mathematics)
+[cart-coords]: https://en.wikipedia.org/wiki/Cartesian_coordinate_system
