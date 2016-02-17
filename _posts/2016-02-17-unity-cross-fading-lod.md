@@ -34,7 +34,7 @@ Shader "Custom/LODFade" {
 					_NoiseTex;
 {% endhighlight %}
 
-Most of all this should be familliar: we define the different diffuse/bump/emmisive textures. The additions to note are the [multi_compile][multi-compile-u3d] statement, which will make sure Unity compiles this shader into two different variants: one with the fade enabled and the other without. This means there is no overhead when there is no fade active. 
+Most of all this should be familliar: we define the different diffuse/bump/emissive textures. The additions to note are the [multi_compile][multi-compile-u3d] statement, which will make sure Unity compiles this shader into two different variants: one with the fade enabled and the other without. This means there is no overhead when there is no fade active. 
 
 We also add a sampler for the `_NoiseTex`, this is a texture that we'll use to define the transition. A gradient for example would always fade from left to right. We'll use a [noise texture][noise-texture]{:target="_blank"} that has a random value for the Alpha color. Because it's not in the properties block above, it should be defined as a shader global together with the crossfade duration.
 
@@ -49,9 +49,7 @@ struct Input {
 
 {% endhighlight %}
 
---- TODO: Mention screen space
-
-As our input we need the UV to sample the other textures, and in case we're fading we will also need the screen position. [This gif][screenspace-example]{:target="_blank"} shows what sampling a texture in screen space actually means. As you can see the texture doesn't move with our ferocious reptile, but instead is dependent on where it is on the screen. 
+The `_NoiseTex` will be sampled in screenspace instead of using the UV of the object. [This gif][screenspace-example]{:target="_blank"} shows what sampling a texture in screen space actually means, as you can see the texture doesn't move with our ferocious reptile but instead is dependent on where it is on the screen. We do this so it works on every model, and is consistent when the camera moves around. In order to get the position on the screen we define the `float4 screenPos` variable as input, but only when we actually are fading. 
 
 {% highlight C# %}
 
