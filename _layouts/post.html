@@ -28,16 +28,21 @@ window.addEventListener('load', function() {
 
   var headerElements = document.querySelector('.post-content')
                           .querySelectorAll('h1, h2, h3, h4, h5');
-  
-  var html = [ '<ul>' ];
-  for(var i = 0; i < headerElements.length; i++)
-  {    
-      html.push('<li>');
-      html.push('<a href="#'+headerElements[i].id+'">'+headerElements[i].innerText+'</a>');
-      html.push('</li>');
+  if(headerElements.length > 0)
+  {
+    var html = [ '<ul>' ];
+    for(var i = 0; i < headerElements.length; i++)
+    {    
+        html.push('<li>');
+        html.push('<a href="#'+headerElements[i].id+'">'+headerElements[i].innerText+'</a>');
+        html.push('</li>');
+    }
+
+    indexElement.innerHTML = html.join("\n");
+  } else {
+    indexElement.className += ' hide';
   }
 
-  indexElement.innerHTML = html.join("\n");
 }, false);
 
 </script>

@@ -21,7 +21,6 @@ markdown: kramdown
 # Custom
 
 permalink: "/:title"
-highlighter: pygments
 
 defaults:
   -
