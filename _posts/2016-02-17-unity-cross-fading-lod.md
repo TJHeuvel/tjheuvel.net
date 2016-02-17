@@ -39,14 +39,13 @@ Most of all this should be familliar: we define the different diffuse/bump/emiss
 We also add a sampler for the `_NoiseTex`, this is a texture that we'll use to define the transition. A gradient for example would always fade from left to right. We'll use a [noise texture][noise-texture]{:target="_blank"} that has a random value for the Alpha color. Because it's not in the properties block above, it should be defined as a shader global together with the crossfade duration.
 
 {% highlight C# %}
-struct Input {
-	float2 uv_MainTex;
-	
-	#ifdef LOD_FADE_CROSSFADE
-		float4 screenPos;
-	#endif
-};
-
+		struct Input {
+			float2 uv_MainTex;
+			
+			#ifdef LOD_FADE_CROSSFADE
+				float4 screenPos;
+			#endif
+		};
 {% endhighlight %}
 
 The `_NoiseTex` will be sampled in screenspace instead of using the UV of the object. [This gif][screenspace-example]{:target="_blank"} shows what sampling a texture in screen space actually means, as you can see the texture doesn't move with our ferocious reptile but instead is dependent on where it is on the screen. We do this so it works on every model, and is consistent when the camera moves around. In order to get the position on the screen we define the `float4 screenPos` variable as input, but only when we actually are fading. 
