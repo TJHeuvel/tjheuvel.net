@@ -1,20 +1,367 @@
----
-layout: default
----
+<!doctype>
+<html>
+	<head>
+		<title>TJHEUVEL - Freelance developer</title>
+		<meta name="viewport" content="width=480" />
+		<script type="text/javascript">
+			var _gaq = _gaq || [];
+			_gaq.push(['_setAccount', 'UA-33701225-1']);
+			_gaq.push(['_trackPageview']);
 
-<div class="home">
-    {% for post in site.posts %}
-      <article class="post ">
-          <h2>
-            <a class="post-link" href="{{ post.url | prepend: site.baseurl }}">{{ post.title }}</a>
-          </h2>
-            
-          {{ post.excerpt }}
-      
-      </article>
+			(function() {
+			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+			})();
 
-      <span class="post-meta">
-        {{ post.date | date: "%b %-d, %Y" }} | {{ post.categories | join:', '}}
-      </span>
-    {% endfor %}
-</div>
+		</script>
+		<style>
+			@font-face {
+				font-family : 'Myriad';
+				src : local("MyriadPro-Regular"),
+					url('inc/fonts/MyriadPro-Regular.otf') format("opentype");
+			}
+			@font-face {
+				font-family : 'MyriadBold';
+				src : local("MyriadPro-Bold"),
+						url('inc/fonts/MyriadPro-Bold.otf') format("opentype");
+			}
+			@font-face {
+				font-family : 'MyriadItalic';
+				src : local("MyriadPro-It"),
+						url('inc/fonts/MyriadPro-It.otf') format("opentype");			
+			}
+
+			body {
+				background: #FFF;
+				margin:0px 0px;
+				color:#FFF;
+				font-family:Myriad, sans-serif;
+			}
+			h1 {
+				font-family:MyriadBold, sans-serif;
+				margin:0px 0px 59px 0px;
+				text-align:center;
+
+				font-size:32px;
+			}
+			h2 {
+				font-size:24px;
+			}
+
+			a {
+				color:#FFF;
+			}
+
+			.taglogo {
+				font-size:1px;
+				margin-bottom:4px;
+			}
+			.taglogo div {
+				font-family:MyriadBold, sans-serif;
+				text-align: center;
+
+				color:#CCD7FF;
+				transition: color linear .5s;
+			}
+			.taglogo .tjheuvel {
+				font-size: 42em;
+				color:#EFEFEF;
+			}
+			.taglogo .unity3d {
+			    font-size: 38em;
+			    letter-spacing: 5px;
+			}
+
+			.taglogo .freelance {
+				font-size: 22em;
+				letter-spacing: 8px;
+			}
+
+			.taglogo .developer {
+				font-size:32em;
+				letter-spacing:2px;
+			}
+			.taglogo .visualisations {
+				font-size: 23em;
+    			letter-spacing: 1px;
+			}
+			.taglogo .games {
+			   font-size: 44em;
+			   letter-spacing: 9px;
+			}
+
+			.taglogo .webdevelopment {
+				font-size: 21em;
+			}
+
+			section {
+				background: #7F9BFF;
+				margin-top:75px;
+				padding:50px 0px;
+
+				border-top:4px solid #7692ED;
+				border-bottom:4px solid #7692ED;
+				width:100%;
+			}
+			section:nth-child(odd) {
+				background:#FFF;
+				border:0;
+				padding:0;
+				margin-top:58px;
+			}
+			section:nth-child(odd) h1 {
+				color: #7F9BFF;
+			}
+			article {
+				margin:0px auto;
+				text-align:center;
+			}
+
+			.project {
+				float:left;
+				width:220px;
+				margin:0px 26px 0px 0px;
+				height:220px;
+				position:relative;
+				border-radius:5px;
+
+				transition:all .2s;
+
+				top:0px;
+
+				cursor:pointer;
+
+				box-shadow:1px 1px 1px 2px #f2f2f2;
+			}
+
+			.project:hover {
+				transform: translate(0px, -10px);
+				-webkit-transform: translate(0px, -10px);
+				-moz-transform: translate(0px, -10px);
+			} 
+			.project.pijndigitaal {
+				background: url("inc/img/pijndigitaal_small.png") no-repeat;
+			}
+			.project.makememine	{
+				background: url("inc/img/makememine_small.png") no-repeat;
+			} 
+			.project.h3d {
+				background: url("inc/img/h3d_small.png") no-repeat;	
+				margin-right:0;  
+			}
+			.project.duckworld	{
+				background: url("inc/img/duckworld_small.png") no-repeat;	
+			}
+
+			.clearfix {
+				clear:both;
+			}
+
+			section.head {
+				z-index: 110;
+				position:fixed;
+				top:0px;
+				width:100%;
+
+				margin-top: 0px;
+				height:75px;
+
+				text-align:right;
+				border-bottom:4px solid #7692ED;
+
+				overflow:hidden;
+			}
+			
+			body.mobile>section.head {
+				display:none;
+			}
+
+			section.head .tjheuvel {
+				position:relative;
+				font-size: 42px;
+				color:#333;
+				text-align:center;
+
+				top:111px;
+				font-family:MyriadBold, sans-serif;
+			}
+
+			.imagebox {
+				height:400px;
+				width:960px;
+				background:#0C0;
+			}
+			.slidecontent {
+				color:#333;
+				
+				padding:34px;
+
+			}
+			.slidecontent a {
+				color:#333;
+				font-weight: bolder;
+			}
+			.slidecontent>.active {
+				opacity:1;		
+				display:block;		
+				pointer-events:auto;
+
+			}
+			.slidecontent>div {
+				position:absolute;
+				text-align:center;
+				
+				pointer-events:none;
+
+				margin-top:-10px;
+				
+				opacity:0;
+				transition: opacity .5s linear;
+			}
+
+			div.slideimage {
+				height:320px;
+				border-radius:5px;
+				background: url('inc/img/projects.jpg') #FFF;
+				box-shadow:1px 1px 1px 2px #f2f2f2;
+
+				transition: background-position ease-in .5s;
+			}
+
+			.fullwidth, article, .slidecontent>div {
+				width:960px;
+			}
+			
+			@media (max-width:960px) {
+				.fullwidth, article, .slidecontent>div {
+					width:480px;
+				}
+
+				.project {
+					margin:0px 10px 10px 10px;
+				}
+
+				.slidecontent>div {
+					margin-top:-23px;
+					margin-left:-34px
+				}
+			}
+	
+			.slideimage#duckworld 		{ background-position: 0px 0px; }
+			.slideimage#pijndigitaal 	{ background-position: -960px 0px; }
+			.slideimage#makememine 		{ background-position: -1920px 0px; }		
+			.slideimage#h3d 			{ background-position: -2880px 0px; }
+			
+		</style>
+	</head>
+
+	<body>
+		<section class='head' data-345='top:0px' data-445='top:-100px'>
+			<div style='z-index:100' class='tjheuvel' data-0="top:129px" data-129="top:0px">TJHEUVEL</div>
+		</section>
+		<section class='tags'>
+			<article>
+				<div class='taglogo'>
+					<div class='tjheuvel'>TJHEUVEL</div>
+					<div class='freelance'>FREELANCE</div>
+					<div class='developer'>DEVELOPER</div>
+					<div class='visualisations'>VISUALISATIONS</div>
+					<div class='games' data-0='opacity[begin]:1' data-210='opacity[end]:0'>GAMES</div>
+					<div class='webdevelopment'>WEBDEVELOPMENT</div>
+					<div class='unity3d'>UNITY3D</div>
+				</div>
+			</article>
+		</section>
+
+		<section class='projects'>
+
+			<h1>RECENT PROJECTS</h1>
+			<article>
+
+				<a class='project duckworld' href='#duckworld'></a>
+				<a class='project pijndigitaal' href='#pijndigitaal'></a>
+				<a class='project makememine' href='#makememine'></a>
+				<a class='project h3d' href='#h3d'></a>
+
+				<div class="clearfix"></div>
+
+				<div class="slidebox">
+					<div class="slidecontent fullwidth">
+						
+						<div id='duckworld'>
+							<a href='http://www.duckworld.com' target='_blank'>DuckWorld Adventures</a> is a fun and educational game made in collaboration with <a href='http://www.sanoma.nl' target='_blank'>Sanoma Netherlands</a>.
+						</div>			
+						<div id='pijndigitaal'>
+							Pijndigitaal is a serious iPad game for children in a local hospital. Made in collaboration with <a href='http://www.thingks.nl'>Thingks Media</a>.
+						</div>
+
+						<div id='makememine'>
+							<a href='http://www.makememine.com' target='_blank'>MakeMeMine</a> is a Magento based e-commerce system where you can design your own clothing. 
+						</div>						
+						<div id='h3d'>
+							<a href='http://www.hom3decorator.com' target='_blank'>Hom3decorator</a> is a unique online application that turns a picture of your living room into an interactive 3D living room.
+						</div>			
+
+					</div>
+
+					<div class="slideimage fullwidth"></div>
+
+				</div>
+
+			</article>
+		</section>
+
+
+		<section>
+			<article>
+				<h1>GET IN TOUCH</h1>
+				<h2>
+					Feel free to send me an <a href='mailto:info@tjheuvel.net'>email</a>, visit my <a href='http://www.linkedin.com/profile/view?id=101086011' target='_blank'>LinkedIn</a> or follow me on <a href='http://www.twitter.com/tjheuvel' target='_blank'>Twitter</a>.
+				</h2>
+			</article>
+		</section>
+		<script type='text/javascript' src='skrollr.js'></script>
+		<script type='text/javascript'>
+		
+		var projectLinks, projectDescr, slideImage;
+
+		window.addEventListener('load', function() {	
+			
+			if(!(/Android|iPhone|iPad|iPod|BlackBerry|Windows Phone/i).test(navigator.userAgent || navigator.vendor || window.opera))
+			{
+				skrollr.init({
+					smoothScrolling : false,
+					forceHeight : false
+				});			
+			} else {
+				document.body.className = 'mobile';
+			}
+				
+			projectLinks = document.querySelectorAll('article>a.project');
+			projectDescr = document.querySelectorAll('.slidecontent>div');
+			slideImage = document.querySelector('.slideimage');
+
+			for(var i = 0; i < projectLinks.length; i++)
+				projectLinks[i].addEventListener('click', function(evt) {					
+					showProject(evt.target.hash.substr(1));
+
+					evt.preventDefault();
+					return false;
+				});
+
+			showProject(projectLinks[0].hash.substr(1));
+		});
+
+		function showProject(proj) {
+
+			slideImage.id = proj;
+
+			for(var i = 0; i < projectDescr.length; i++)
+				projectDescr[i].className = projectDescr[i].id == proj ? 'active' : 'inactive';			
+			
+		}
+		</script>
+		
+	</body>
+</html>
