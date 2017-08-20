@@ -121,7 +121,7 @@
 			.project {
 				float:left;
 				width:220px;
-				margin:0px 26px 0px 0px;
+				margin:0px 150px 0px 0px;
 				height:220px;
 				position:relative;
 				border-radius:5px;
@@ -134,7 +134,12 @@
 
 				box-shadow:1px 1px 1px 2px #f2f2f2;
 			}
-
+			.project:nth-child(3n) {
+				margin-right:0px;
+			}
+			.project:nth-child(1n+4) {
+				margin-top:30px;
+			}
 			.project:hover {
 				transform: translate(0px, -10px);
 				-webkit-transform: translate(0px, -10px);
@@ -153,6 +158,8 @@
 			.project.duckworld	{
 				background: url("inc/img/duckworld_small.png") no-repeat;	
 			}
+			.project.verdun	{ background: url("inc/img/verdun_small.png") no-repeat; }
+			.project.drpanda	{ background: url("inc/img/drpanda_small.png") no-repeat; }
 
 			.clearfix {
 				clear:both;
@@ -248,10 +255,12 @@
 				}
 			}
 	
-			.slideimage#duckworld 		{ background-position: 0px 0px; }
-			.slideimage#pijndigitaal 	{ background-position: -960px 0px; }
-			.slideimage#makememine 		{ background-position: -1920px 0px; }		
-			.slideimage#h3d 			{ background-position: -2880px 0px; }
+			.slideimage#verdun 			{ background-position: 0px 0px; }
+			.slideimage#drpanda 		{ background-position: calc(-960px * 1) 0px; }
+			.slideimage#duckworld 		{ background-position: calc(-960px * 2) 0px; }
+			.slideimage#pijndigitaal 	{ background-position: calc(-960px * 3) 0px; }
+			.slideimage#makememine 		{ background-position: calc(-960px * 4) 0px; }
+			.slideimage#h3d 			{ background-position: calc(-960px * 5) 0px; }
 			
 		</style>
 	</head>
@@ -279,6 +288,8 @@
 			<h1>RECENT PROJECTS</h1>
 			<article>
 
+				<a class='project verdun' href='#verdun'></a>
+				<a class='project drpanda' href='#drpanda'></a>
 				<a class='project duckworld' href='#duckworld'></a>
 				<a class='project pijndigitaal' href='#pijndigitaal'></a>
 				<a class='project makememine' href='#makememine'></a>
@@ -289,6 +300,15 @@
 				<div class="slidebox">
 					<div class="slidecontent fullwidth">
 						
+
+						<div id='verdun'>
+							<a href='http://www.verdungame.com' target='_blank'>Verdun</a> is a first person shooter set in the first World War, made by <a href='https://www.m2h.nl/'>M2H</a> and <a href='http://www.blackmillgames.com/'>Blackmill Games</a>.
+						</div>			
+
+						<div id='drpanda'>
+							<a href='https://drpanda.com/games/hoopa-city' target='_blank'>DrPanda</a> is a games developer, aiming to bring open-ended play to kids' fingertips. We collaborated to update several titles with an IAP version.
+						</div>			
+
 						<div id='duckworld'>
 							<a href='http://www.duckworld.com' target='_blank'>DuckWorld Adventures</a> is a fun and educational game made in collaboration with <a href='http://www.sanoma.nl' target='_blank'>Sanoma Netherlands</a>.
 						</div>			
