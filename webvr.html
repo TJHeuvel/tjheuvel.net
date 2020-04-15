@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Cursor Handler - A-Frame School</title>
+    <meta name="description" content="Cursor Handler - A-Frame School">
+    <script src="https://aframe.io/releases/0.5.0/aframe.min.js"></script>
+    <script>
+      AFRAME.registerComponent('handle-events', {
+        init: function () {
+          var el = this.el;  // <a-box>
+          el.addEventListener('mouseenter', function () {
+            el.setAttribute('color', '#24CAFF');  
+          });
+          el.addEventListener('mouseleave', function () {
+            el.setAttribute('color', '#EF2D5E');  
+          });
+          el.addEventListener('click', function () {
+            
+            var cam = document.getElementById('cameraWrapper');
+
+            var boxes = document.querySelectorAll('a-box');
+            for(var i = 0; i < boxes.length; i++)
+            	boxes[i].object3D.visible = boxes[i] != el;
+           	cam.object3D.position.set(el.object3D.position.x, el.object3D.position.y,el.object3D.position.z);
+          });
+        } 
+      });
+    </script>
+  </head>
+  <body>
+    <a-scene>
+      <a-box color="#EF2D5E" position="0 1 -4" handle-events></a-box>
+      <a-box color="#EF2D5E" position="4 1 -4" handle-events></a-box>
+      <a-box color="#EF2D5E" position="0 0 0" visible='false' handle-events></a-box>
+      
+      <a-entity id='cameraWrapper' position="0 0 0">
+	      <a-camera wasd-controls-enabled='false'>
+	      	  <a-entity cursor="fuse: true; fuseTimeout: 500"
+	            position="0 0 -1"
+	            geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
+	            material="color: black; shader: flat">
+	      </a-camera>
+	  </a-entity>
+      <a-sky color="#333"></a-sky>
+      <a-plane color="#000" rotation="-90 0 0" width="500" height="500"></a-plane>
+    </a-scene>
+  </body>
+</html>
