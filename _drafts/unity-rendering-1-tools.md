@@ -4,23 +4,6 @@ date:   2023-04-03 10:34:17 +0100
 categories: programming gamedev graphics
 ---
 
-1. Rendering in Unity - Tools
-How to use Renderdoc, how does a frame appear? Concepts of d3d11
-
-2. Rendering in Unity - How a pixel is born?
-Vertex shader, clip space. Custom projection matrix.
-
-3. Rendering in Unity - Submitting draws
-
-4. Rendering in Unity - Culling
-Frustrum culling. TODO: learn calculateplanes
-
-5. Rendering in Unity - Instancing
-
-GPU Instancing, SRP Batcher
-
-6. Rendering in Unity - Indirect  
-
 # Rendering in Unity Part 1: Tools of the trade
 
 ## What and why
