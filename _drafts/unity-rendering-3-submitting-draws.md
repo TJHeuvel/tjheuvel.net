@@ -6,45 +6,49 @@ categories: programming gamedev graphics
 
 # Rendering in Unity Part 3: Submitting draws
 
-We've unshackled our shader from Unity's own help in the last part, and (hopefully) learned a great deal. Lets continue this trend of do it ourself rendering!
+We've unshackled our shader from Unity's own help in the last part, and (hopefully) learned a great deal. Lets continue this trend of DIY rendering! In this part we will get rid of Unity's own MeshRenderers, and rather submit draws ourself. 
 
-In this part we will get rid of Unity's own MeshRenderers, and rather submit draws ourself. 
+Lets jazz up our scene, only a single cube is not so interesting. With some fancy [numeric field expressions](https://docs.unity3d.com/2022.2/Documentation/Manual/EditingValueProperties.html) we can easily create a randomly scattered scene full of cubes, setting our transform values to : `R(-50,50)`
 
-Lets jazz up our scene, only a single cube is not so interesting. With some fancy [numeric field expressions](https://docs.unity3d.com/2022.2/Documentation/Manual/EditingValueProperties.html) we can easily create a randomly scattered scene full of cubes, setting our transform values to : `R(-200,200)`
+<img src="../images/rendering-3-scene.jpg" height="400px" />
 
-screenshot-new-scene
+The scene can be found [here](https://github.com/TJHeuvel/UnityRenderingTutorial/tree/part-three). 
 
-## Normal people
+## How Unity wants us to do it
 
 Normal people would use the [RenderMesh](https://docs.unity3d.com/ScriptReference/Graphics.RenderMesh.html) API, that allows you to pass a matrix for its object to world, and let Unity handle that. This is how you'd do this in your project. Note the Graphics class now contains a bunch of DrawX and also RenderX methods, the Render ones have recently been added and its recommended to use these. 
 
-We're not normal, we would rather provide our own. For good reason, there is no API exposed that really suits our strange needs, but we can get close enough with [RenderMeshPrimitives](https://docs.unity3d.com/ScriptReference/Graphics.RenderMeshPrimitives.html). We can provide some general parameters and a mesh, submesh and instancecount will for now always be 0 and 1 respectively.
+We're not normal, we would rather provide our own. For good reason, there is no API exposed that really suits our strange needs, but we can get close enough with [RenderMeshPrimitives](https://docs.unity3d.com/ScriptReference/Graphics.RenderMeshPrimitives.html). We can provide some general parameters and a mesh, thats all we're interested in. For now we'll ignore submesh and instanceCount.
 
 ## Setup
 
-We'd still like to use Unity as an authoring tool, so lets make our own Render System that turns off rendering. We'll be using the [RenderMesh](https://docs.unity3d.com/ScriptReference/Graphics.RenderMesh.html) API to actually instruct our GPU to render a thing, lets collect all information it needs.
-
+We'd still like to use Unity as an authoring tool, so lets make our own Render System and disable the meshrenderers. Rather than have a RenderSystem component on each cube, lets make sure there is just a single one on the Camera. 
 
 <%
-struct DrawCall
-{
-	public Mesh Mesh;
-	public Material Material;
-	public float4x4 ObjectToWorld;
-}
-private List<DrawCall> drawCalls;
 
-void OnEnable()
-{
-	foreach(var renderer in FindObjectsOfType<MeshRenderer>())
-	{
-		drawCalls.Add(new DrawCall()
-		{
+    struct DrawCall
+    {
+        public Mesh Mesh;
+        public Material Material;
+        public float4x4 ObjectToWorld;
+    }
 
-		});
-		renderer.forceRenderingOff = true;
-	}
-}
+    private List<DrawCall> drawCalls;
+    void OnEnable()
+    {
+        drawCalls = new List<DrawCall>();
+        foreach (var meshRenderer in FindObjectsOfType<MeshRenderer>())
+        {
+            drawCalls.Add(new DrawCall()
+            {
+                Mesh = meshRenderer.GetComponent<MeshFilter>().sharedMesh,
+                Material = meshRenderer.sharedMaterial,
+
+                ObjectToWorld = meshRenderer.transform.localToWorldMatrix
+            });
+            meshRenderer.forceRenderingOff = true;//We'll do our own!
+        }
+    }
 %>
 
 Observe we turn off Unity rendering with `forceRenderingOff`, however we could have also destroyed the entire GameObject. Keeping them around allows us to easily switch between normal and our custom rendering by disabling the component. In your game, if you have a massive amount of objects, you might actually gain a bunch of performance removing gameObjects. This is the reason why terrain detail does not create gameobjects, having this much extra data for each blade of grass would be wildly inefficient.  
@@ -54,31 +58,34 @@ And now for actually queueing up the draw call itself:
 
 void LateUpdate()
 {
-	Shader.SetGlobal("Custom_ViewProjection", Camera.main.viewMatrix * GL.thing(Camera.main.projectionMatrix));
+	Shader.SetGlobalMatrix("custom_ViewMatrix", Camera.main.worldToCameraMatrix);
+    Shader.SetGlobalMatrix("custom_ProjectionMatrix", GL.GetGPUProjectionMatrix(Camera.main.projectionMatrix, true));
 
-	foreach(var draw in drawCalls)
-	{
-		var propBlock = new MaterialPropertyBlock();
-		propBlock.SetMatrix("Custom_ObjectToWorld", draw.ObjectToWorld);
+    foreach (var draw in drawCalls)
+    {
+        MaterialPropertyBlock matProps = new MaterialPropertyBlock();
+        matProps.SetMatrix("custom_ObjectToWorld", transform.localToWorldMatrix);
 
-		Graphics.RenderMeshPrimitives(new RenderParams(draw.Material) 
-		{
-			matProps = propBlock; 
-		}, draw.Mesh, 0, 1);
-	}
+        Graphics.RenderMeshPrimitives(new RenderParams(draw.Material)
+        {
+            matProps = matProps
+        }, draw.Mesh, 0);
+    }
 }
 %> 
 Notice the manual mentioning queue, this method does not 'immediately' submit a draw. It just adds it to Unitys internal structure, which will then emit a DrawIndexed at the right time. That is; when we're deferred, shadow etc. This is all still handled within Unity.
 
 With our graphics debugger we can observe that our drawing is practically the same as before; our game view also looks exactly the same. Only when we move around the original gameobject and dont see our game update do we notice any difference.
 
+### Fixing scene view
+
+Our scene view is all sorts of messed up. This is because we only send the camera properties of the main camera, so its rendering the scene view from the perspective of the main camera, and thats pretty bad.
+
+Lets use the `RenderPipelineManager.beginCameraRendering` callback to set the properties for the currently drawing camera instead. [Our code](https://github.com/TJHeuvel/UnityRenderingTutorial/commit/4847edcf1166f310f4259dd28ebc2137b07d7045) will now run once for each camera thats rendering, and our scene view looks good again! 
+
 ## Culling
 
-When we place our camera inside our cubes, we can observe a difference in our renderer and Unity's. When we open the render stats panel, moving around the camera changes the number of rendered cubes in Unity, but not with ours. Whats up?
-
-TODO: SHOW IMAGE EXAMPLE
-
-Right now we are always submitting every cube to be drawn. The GPU will then reject cubes out of our view, in clip space. However this is rather wasteful, perhaps we can do a first pass to cull away what wont be visible anyway. Lets cull everything that is outside our view frustum.
+Right now we are always submitting every cube to be drawn. The GPU will then reject cubes out of our view, in clip space. However this is rather wasteful, we can do a first pass to cull away what wont be visible anyway. Lets cull everything that is outside our view frustum.
 
 We'll first need to define be able to describe our frustum planes, and then determine if our renderers are inside or out. 
 
@@ -100,12 +107,21 @@ With some trig we can calculate the exact location and size of the near and far 
     planeSize.y = math.tan(camera.fieldOfView / 2 * Mathf.Deg2Rad);
     planeSize.x = planeSize.y * camera.aspect;
 
-    float3 nearClipExtends = new float3(planeSize * camera.nearClipPlane, camera.nearClipPlane);
-    float3 farClipExtends = new float3(planeSize * camera.farClipPlane, camera.farClipPlane);
+    float3 nearClipMax = new float3(planeSize * camera.nearClipPlane, camera.nearClipPlane);
+    float3 nearClipMin = -nearClipMax;
+    float3 farClipMax = new float3(planeSize * camera.farClipPlane, camera.farClipPlane);
+    float3 farClipMin = -nearClipMax; 
+
+    Plane[] planes = new Plane[7];
+
+    planes[0] = asdf;
+
+    //etc
 %>
 
-These give the top right corner of our near and far plane, the bottom left are the negation of this. We can create a plane with 3 of them.
+**TODO TIJMEN YOU BIG FAT LIER THIS DOESNT WORK**
 
+These give the top right corner of our near and far plane, the bottom left are the negation of this. We can create a plane with 3 of them.
 
 There's a faster way of calculating these, by extracting them from the projection matrix. This is described [here](http://www.cs.otago.ac.nz/postgrads/alexis/planeExtraction.pdf), and is what Unity does internally. 
 

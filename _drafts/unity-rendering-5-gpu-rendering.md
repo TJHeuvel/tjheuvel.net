@@ -6,7 +6,9 @@ categories: programming gamedev graphics
 
 # Rendering in Unity Part 5: GPU Driven Rendering
 
-So far in our series we've gone from zero to roughly understanding the different types of draw options Unity offers us, and how it works under the hood. Although we havent used Unity's helpful utilities, we have never surpassed them. Until today.
+So far in our series we've gone from zero to roughly understanding the different types of draw options Unity offers us, and how it works under the hood. Although we havent used Unitys helpful utilities, we have never surpassed them. Until today.
+
+Modern games like Rainbow 6 Siege, Battlefield and others utilise GPU driven rendering to free up precious CPU resources.
 
 ## What is GPU driven rendering?
 
@@ -20,7 +22,7 @@ RenderMeshIndirect wants a GraphicsBuffer from us, within it should be the [Indi
 
 Those parameters will become very imporant for us soon, so lets make sure we understand them well.
 
-## Indirect Parameters
+### Indirect Parameters
 
 `baseVertexIndex`, `startIndex` and `indexCountPerInstance` contain information about the mesh. How many triangles are there, where in the mesh that you've given me do they start? These can be queried by getting the Mesh's SubMeshInfo, they map 1:1 to what is inside [SubMeshDescriptor](https://docs.unity3d.com/ScriptReference/Rendering.SubMeshDescriptor.html). 
 
@@ -29,13 +31,17 @@ Those parameters will become very imporant for us soon, so lets make sure we und
 Lets imagine we are rendering our original scene with 10k cubes. We'd make a single entry in our drawindirect, with the base vertex and start index set to 0. Our cube has 36 indices, we can see this in the model inspector, `indexCountPerInstance` should be set to this.
 We'd like to render from 0 to 10k, so that will be our `startInstance` and `instanceCount`.
 
+## Getting started
+
+Up until now we have used our own inputs, rather than what is provided by Unity. Although we could certainly continue this trend, because this part actually is an improvement over Unity internal we'll ditch our custom methods.
+
 ## Doing the thing
 
 Our general strategy will be like this:
 
 1. We'll create a Graphics Buffer for our indirect arguments. We load them up with the data for each (sub)mesh, and leave the `instanceCount` at 0
 2. Another Graphics Buffer will contain all PerObjectData. Our culling will use this, but its also where the Vertex shader gets our ObjectToWorlds from.
-3. A compute shader takes the PerObjectData as input, as well as the camera parameters. We'll cull them like we did before, and increase the `instanceCount` for each visible object. 
+3. A compute shader takes the PerObjectData as input, as well as the camera parameters. We'll cull them like we did before, except now on the GPU. We'll increase the `instanceCount` for each visible object, meaning that if there are 3 visible objects the GPU will draw 3 instances of our mesh. 
 
 <img src="../images/rendering-5-visibleindices.jpg" height="300">
 
@@ -45,16 +51,92 @@ In this scenario, we see that object 0 1 and 3 are visible, while 2 is outside o
 
 ## Ok but now really doing the thing
 
-We'll first only support having one mesh, so lets disable our spheres. 
+We'll start off where we were with instanced rendering. Rather than each individual draw call having a GraphicsBuffer, we'll make one giant buffer with per instance data.
 
 <%
-TODO WRITE THEM CODES
+    struct PerObjectData
+    {
+        public float4x4 ObjectToWorld;
+        public Bounds WorldBounds;
+        public int DrawId;
+    }
+%> 
+This looks rather similar, except we added a DrawId. This is the index in the indirectargs buffer, the culling compute will need to know which draws count to increase. 
+
+<%
+    void OnEnable()
+    {
+        DrawCalls = new List<DrawCall>();
+
+        foreach (var renderer in FindObjectsOfType<MeshRenderer>())
+        {
+            var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+            var material = renderer.sharedMaterial;
+
+            int index = DrawCalls.FindIndex(d => d.Mesh == mesh && d.Material == material);
+
+            if (index == -1)
+            {
+                index = DrawCalls.Count;
+                DrawCalls.Add(new DrawCall()
+                {
+                    Mesh = mesh,
+                    Material = material,
+                    PerObjectData = new List<PerObjectData>(),
+                });
+            }
+
+            DrawCalls[index].PerObjectData.Add(new PerObjectData() { ObjectToWorld = renderer.transform.localToWorldMatrix, WorldBounds = renderer.bounds, DrawId = index });
+        }
 %>
+This mostly looks similar to what we have before, except we fill in the DrawId.
 
+Next up we build the indirect arguments, filling in information about our (sub)mesh.
+<%
 
+        GraphicsBuffer.IndirectDrawIndexedArgs[] args = new GraphicsBuffer.IndirectDrawIndexedArgs[DrawCalls.Count];
+
+        uint totalCount = 0;
+        for (int i = 0; i < DrawCalls.Count; i++)
+        {
+            var subMeshInfo = DrawCalls[i].Mesh.GetSubMesh(0);
+            args[i] = new GraphicsBuffer.IndirectDrawIndexedArgs()
+            {
+                baseVertexIndex = (uint)subMeshInfo.baseVertex,
+                startIndex = (uint)subMeshInfo.indexStart,
+                indexCountPerInstance = (uint)subMeshInfo.indexCount,
+
+                //Since our perobjectdata buffer is contiguous over *all* meshes, we make sure the instanceIds are offset too.
+                startInstance = totalCount
+            };
+
+            totalCount += (uint)DrawCalls[i].PerObjectData.Count;
+        }
+%>
+The important part to understand is the startInstance. Lets say we have 3 cubes and 4 spheres, we can fill in all 7 elements in a single per-object-data buffer, and make sure the draw for our 4 spheres starts at instance 4 so its offset correctly.
+
+Now we're ready to make the final buffers, fill in the per object data and setup the indirect-args buffers.
+<%
+
+        perObjectDataBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<PerObjectData>());
+        visibleIndicesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<uint>());
+
+        //Upload all per object data
+        for (int i = 0; i < DrawCalls.Count; i++)
+        {
+            perObjectDataBuffer.SetData(DrawCalls[i].PerObjectData, 0, (int)args[i].startIndex, DrawCalls[i].PerObjectData.Count);
+        }
+
+        clearIndirectArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.CopySource, DrawCalls.Count, GraphicsBuffer.IndirectDrawIndexedArgs.size);
+        indirectArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.CopyDestination, DrawCalls.Count, GraphicsBuffer.IndirectDrawIndexedArgs.size);
+
+        //Set the default clear state once, no need to update indirectargsbuffer because that will be done every frame
+        clearIndirectArgsBuffer.SetData(args);
+%> 
 
 One thing not mentioned in our approach above is the need to clear. Our compute will add one for each visible object to the instanceCount. If we dont reset this to 0 its bad! What we'll do is have two buffers, one pristine clean state where the instancecount is 0, and one final state. At the beginning of our frame we copy the clean into the dirty, and we're done.  
 
+TODO: Add image like this: https://d2jaiao3zdxbzm.cloudfront.net/wp-content/uploads/meshlet-buffers-1536x787.png
 
 ## Compute Culling
 
@@ -67,33 +149,31 @@ On the CPU side, lets prepare our shader parameters, and fire it off!
 
 void dispatchCull()
 {
+	Graphics.CopyBuffer(clearIndirectArgs, indirectArgs); //Make sure the counts are reset!
+
 	int kernelId = computeCulling.FindKernel("CSMain");
 	computeCulling.SetVectorArray("Planes", planes);
 
+	//TODO: Fill in the rest
 
 	computeCulling.Dispatch(kernelId, Math.max(count/64,1), 1, 1);
 }
 %>
 
+Our shader will look like this:
+
+https://github.com/arycama/NodeRenderPipeline/blob/master/ShaderLibrary/Resources/GPU%20Driven%20Rendering/InstanceRendererCull.compute
+**TODO: Port my compute to use planes culling**
 
 
-## Multiple meshes
+Quite a bit of setup, but our payoff is really great too. Our CPU spends hardly any time at all rendering our cubes, even if we increase their counts to multiple thousands.
 
-A game with only cubes is hardly a game at all. Lets try to introduce our spheres again.
-
-We could duplicate our current setup, and invoke our culling twice. However, feeding the GPU with larger batches is better. Instead, what we'll do is:
-
-1. Make sure our PerObjectData is sorted by mesh. The first 4 elements are our cubes, the next 6 are our spheres.
-2. The first IndirectArgument is for our cube, its `startInstance` will stay 0.
-3. Our second IndirectArgument will be for our sphere. We will set the `startInstance` to 4. This effectively means our Vertex shader gets InstanceId from 4 to 10, exactly lining up with our PerObjectData.
-
-TODO: Add image like this: https://d2jaiao3zdxbzm.cloudfront.net/wp-content/uploads/meshlet-buffers-1536x787.png
-
-## Further improvements
+# Further improvements
 
 - With our depth buffer we can apply occlusion culling. 
 
 - We have to break batches by meshes. We can combine *all* meshes in our scene to a single giant mesh, and use submeshes instead! There is still one indirect arg per submesh, but each RenderIndirect call can be supplied with multiple draw commands. 
+
 - We have to break batches by materials. We can combine *all* materials, that use the same shader. This is the same as [per-instance properties](https://docs.unity3d.com/Manual/gpu-instancing-shader.html).
 
 - Remove completely culled out indirect arguments draws. We can read in the [performance guide](https://gpuopen.com/learn/rdna-performance-guide/#executeindirect) from AMD this is recommended. 

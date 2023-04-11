@@ -6,9 +6,9 @@ categories: programming gamedev graphics
 
 # Rendering in Unity Part 4: Instancing
 
-We've made a cool little 'renderer', but despite our culling efforts its stil not very fast. Currently, we render 10 thousand cubes, but send a new draw call to the GPU for each one of them. This is a lot of communication, which we'd like to avoid. 
+We've made a cool little 'renderer', but despite our culling efforts its stil not very fast. Currently, we render 500 cubes, but send a new draw call to the GPU for each one of them. This is a lot of communication, which we'd like to avoid. 
 
-Rather than individual draws, it would be much quicker if we could tell the GPU to render 10k instances of the same mesh, but of course with a different transform for each of them. Thats the premise of instanced rendering.
+Rather than individual draws, it would be much quicker if we could tell the GPU to render 500 instances of the same mesh, but of course with a different transform for each of them. Thats the premise of instanced rendering.
 
 Our rough process will be this:
 
@@ -25,7 +25,7 @@ We could use [SetMatrixArray](https://docs.unity3d.com/ScriptReference/MaterialP
 
 All Shader/Material/PropertyBlock Set Array behave like this. Asking our players to restart our game every time they see more objects is rather bad for retention, so lets manage this data ourself.
 
-We've seen constant buffers before, lets manage our own so we can supply the GPU with the right information. The GraphicsBuffer* class is how Unity exposes this control.
+We've seen constant buffers before, lets manage our own so we can supply the GPU with the right information. The GraphicsBuffer<sub>1</sub> class is how Unity exposes this control.
 
 <%
 
@@ -33,7 +33,7 @@ GraphicsBuffer perObjectData = new GraphicsBuffer(GraphicsBuffer.Target.Constant
 
 %> 
 
-This is how we make a Constant buffer that would fit up to 10 matrices. With [SetData](https://docs.unity3d.com/ScriptReference/GraphicsBuffer.SetData.html) we can supply it with information. 
+This is how we make a Constant buffer that would fit up to 10 matrices. With [SetData](https://docs.unity3d.com/ScriptReference/GraphicsBuffer.SetData.html) we can supply it with information. Lets also not forget to [Release](https://docs.unity3d.com/ScriptReference/GraphicsBuffer.Release.html) the buffer once we're done with it in OnDisable, otherwise we'll leak GPU memory!
 
 ## Adding it to our renderer
 
@@ -54,12 +54,17 @@ struct DrawCall
 
 	public List<PerObjectData> PerObjectData;
 }
-
+, 
 private List<DrawCall> DrawCalls;
 
 void OnEnable()
 {
+	DrawCalls = new List<DrawCall>();
 
+	foreach(var renderer in FindObjectsOfType<MeshRenderer>())
+	{
+
+	}
 }
 
 %>
@@ -94,7 +99,7 @@ void LateUpdate()
 
 %>
 
-Notice we are now filling in the instance count, we're asking our GPU to render this mesh once for each visible instance of it. All we now have to do is read out the index in our vertex shader, and make s
+Notice we are now filling in the instance count, we're asking our GPU to render this mesh once for each visible instance of it. All we now have to do is read out the index in our vertex shader, and use that object to world instead.
 
 ### The Vertex shader
 
@@ -102,14 +107,12 @@ Now our shader first has to accept the new constant buffer with positions. That 
 
 <%
 CBUFFER_START(_ObjectToWorldBuffer)
-
 float4x4 objectToWorlds;
-
 CBUFFER_END
 
 %>
+**TODO VERIFY THAT SYNTAX!**
 Unity has difference in platforms handled with macros, see the precompiled source for your specific output. Next; our GPU passes over the index of the current draw (which goes from 0.. instanceCount supplied in the RenderMeshPrimitives) with the shader semantic `SV_InstanceID`.
-
 
 <%
 struct Input
@@ -117,14 +120,16 @@ struct Input
 	uint instanceId : SV_InstanceID;
 }
 
+//in Vert
 Custom_ObjectToWorld = _ObjectToWorldBuffer[i.instanceID];
 %>
 
-Press play, and observe great success!
+Press play, and observe great success! With a single draw we can now do all 500 cubes. 
 
-One important thing we have to do is Release our graphics buffer when we no longer want to use it. If we dont, we leak GPU memory! For our case, in OnDisable seems to be a good place to do this.
+## Pushing to the limit
 
-## Moving beyond cubes
+This will work for for up to 1023 cubes. We can read a Constant Buffer [can store up to 4096 float4s](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants), and since a matrix is 4 float4's that means our buffer is full at 1023. Coincidentally, Unitys instancing also supports up to 1023 unique draws.
 
+If your game for some reason only consists of cubes we can get around this by using [StructuredBuffers](https://learn.microsoft.com/en-us/windows/win32/direct3d11/direct3d-11-advanced-stages-cs-resources#structured-buffer). They are a newer(introduced in d3d11) way to store GPU data, that is only limited by the size of VRAM. The downside is they are slightly slower to read from, but if this is the difference between breaking batches you'll more than make up for it. You make them in the same way, but instead of Contant pass in the type Structured.
 
-* There is also a ComputeBuffer, which is simply an older API that [we shouldnt use](https://forum.unity.com/threads/graphicsbuffer-and-mesh.636631/#post-4268896). 
+* There is also a ComputeBuffer, which is simply an older API that [we shouldnt use](https://forum.unity.com/threads/graphicsbuffer-and-mesh.636631/#post-4268896) anymore. 
