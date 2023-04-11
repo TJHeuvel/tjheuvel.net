@@ -24,7 +24,7 @@ We're not normal, we would rather provide our own. For good reason, there is no 
 
 We'd still like to use Unity as an authoring tool, so lets make our own Render System and disable the meshrenderers. Rather than have a RenderSystem component on each cube, lets make sure there is just a single one on the Camera. 
 
-<%
+{% highlight C# %}
 
     struct DrawCall
     {
@@ -49,12 +49,12 @@ We'd still like to use Unity as an authoring tool, so lets make our own Render S
             meshRenderer.forceRenderingOff = true;//We'll do our own!
         }
     }
-%>
+{% endhighlight %}
 
 Observe we turn off Unity rendering with `forceRenderingOff`, however we could have also destroyed the entire GameObject. Keeping them around allows us to easily switch between normal and our custom rendering by disabling the component. In your game, if you have a massive amount of objects, you might actually gain a bunch of performance removing gameObjects. This is the reason why terrain detail does not create gameobjects, having this much extra data for each blade of grass would be wildly inefficient.  
 
 And now for actually queueing up the draw call itself:
-<%
+{% highlight C# %}
 
 void LateUpdate()
 {
@@ -72,7 +72,7 @@ void LateUpdate()
         }, draw.Mesh, 0);
     }
 }
-%> 
+{% endhighlight %} 
 Notice the manual mentioning queue, this method does not 'immediately' submit a draw. It just adds it to Unitys internal structure, which will then emit a DrawIndexed at the right time. That is; when we're deferred, shadow etc. This is all still handled within Unity.
 
 With our graphics debugger we can observe that our drawing is practically the same as before; our game view also looks exactly the same. Only when we move around the original gameobject and dont see our game update do we notice any difference.
@@ -102,7 +102,7 @@ Our frustum is defined by the camera's field of view, when this is set to 60 we 
 
 With some trig we can calculate the exact location and size of the near and far clip:
 
-<%
+{% highlight C# %}
     float2 planeSize;
     planeSize.y = math.tan(camera.fieldOfView / 2 * Mathf.Deg2Rad);
     planeSize.x = planeSize.y * camera.aspect;
@@ -117,7 +117,7 @@ With some trig we can calculate the exact location and size of the near and far 
     planes[0] = asdf;
 
     //etc
-%>
+{% endhighlight %}
 
 **TODO TIJMEN YOU BIG FAT LIER THIS DOESNT WORK**
 
@@ -129,7 +129,7 @@ There's a faster way of calculating these, by extracting them from the projectio
 
 Now we have our plane, lets see how we can know if our object lies within it. There are a few different ways to do this; whats presented here is a slightly inaccurate but quite fast solution.
 
-<%
+{% highlight C# %}
 bool IsObjectWithinFrustum(Plane[] frustumPlanes, Bounds worldBounds)
 {
 	foreach(var plane in frustumPlanes)
@@ -147,7 +147,7 @@ bool IsObjectWithinFrustum(Plane[] frustumPlanes, Bounds worldBounds)
         }
     }
 }
-%>
+{% endhighlight %}
 
 Whats going on here? Whats that dot? We might be familiar with its use in comparing angles, but how does this make sense? A full explanation on the dot product can be found [here](https://gamemath.com/book/vectors.html#dot_product), but lets rush through.
 
@@ -163,7 +163,7 @@ Back in our culling, we want to know how large the object is, in the direction o
 The blue arrow represents our plane normal, the green arrow is the result of the dot product. The gray wireframe is the aabb of our object, we can observe that indeed our maths provide us with the size of the bounds, in the direction we are interested in. 
 
 Lets integrate this into our renderer:
-<%
+{% highlight C# %}
 Plane[] planes;
 void LateUpdate()
 {
@@ -183,5 +183,5 @@ void LateUpdate()
 	}
 }
 
-%>
+{% endhighlight %}
 Now when we move around, we can observe fewer draw calls. Interestingly our scene view will also show us our effect!

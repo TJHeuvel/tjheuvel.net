@@ -53,17 +53,17 @@ In this scenario, we see that object 0 1 and 3 are visible, while 2 is outside o
 
 We'll start off where we were with instanced rendering. Rather than each individual draw call having a GraphicsBuffer, we'll make one giant buffer with per instance data.
 
-<%
+{% highlight C# %}
     struct PerObjectData
     {
         public float4x4 ObjectToWorld;
         public Bounds WorldBounds;
         public int DrawId;
     }
-%> 
+{% endhighlight %} 
 This looks rather similar, except we added a DrawId. This is the index in the indirectargs buffer, the culling compute will need to know which draws count to increase. 
 
-<%
+{% highlight C# %}
     void OnEnable()
     {
         DrawCalls = new List<DrawCall>();
@@ -88,11 +88,11 @@ This looks rather similar, except we added a DrawId. This is the index in the in
 
             DrawCalls[index].PerObjectData.Add(new PerObjectData() { ObjectToWorld = renderer.transform.localToWorldMatrix, WorldBounds = renderer.bounds, DrawId = index });
         }
-%>
+{% endhighlight %}
 This mostly looks similar to what we have before, except we fill in the DrawId.
 
 Next up we build the indirect arguments, filling in information about our (sub)mesh.
-<%
+{% highlight C# %}
 
         GraphicsBuffer.IndirectDrawIndexedArgs[] args = new GraphicsBuffer.IndirectDrawIndexedArgs[DrawCalls.Count];
 
@@ -112,11 +112,11 @@ Next up we build the indirect arguments, filling in information about our (sub)m
 
             totalCount += (uint)DrawCalls[i].PerObjectData.Count;
         }
-%>
+{% endhighlight %}
 The important part to understand is the startInstance. Lets say we have 3 cubes and 4 spheres, we can fill in all 7 elements in a single per-object-data buffer, and make sure the draw for our 4 spheres starts at instance 4 so its offset correctly.
 
 Now we're ready to make the final buffers, fill in the per object data and setup the indirect-args buffers.
-<%
+{% highlight C# %}
 
         perObjectDataBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<PerObjectData>());
         visibleIndicesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<uint>());
@@ -132,7 +132,7 @@ Now we're ready to make the final buffers, fill in the per object data and setup
 
         //Set the default clear state once, no need to update indirectargsbuffer because that will be done every frame
         clearIndirectArgsBuffer.SetData(args);
-%> 
+{% endhighlight %} 
 
 One thing not mentioned in our approach above is the need to clear. Our compute will add one for each visible object to the instanceCount. If we dont reset this to 0 its bad! What we'll do is have two buffers, one pristine clean state where the instancecount is 0, and one final state. At the beginning of our frame we copy the clean into the dirty, and we're done.  
 
@@ -144,7 +144,7 @@ We'll need to port over our existing culling to a compute shader.
 
 On the CPU side, lets prepare our shader parameters, and fire it off!
 
-<%
+{% highlight C# %}
 [SerializeField] private ComputeShader computeCulling;
 
 void dispatchCull()
@@ -158,7 +158,7 @@ void dispatchCull()
 
 	computeCulling.Dispatch(kernelId, Math.max(count/64,1), 1, 1);
 }
-%>
+{% endhighlight %}
 
 Our shader will look like this:
 

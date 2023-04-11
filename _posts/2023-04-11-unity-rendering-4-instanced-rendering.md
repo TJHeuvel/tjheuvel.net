@@ -27,11 +27,11 @@ All Shader/Material/PropertyBlock Set Array behave like this. Asking our players
 
 We've seen constant buffers before, lets manage our own so we can supply the GPU with the right information. The GraphicsBuffer<sub>1</sub> class is how Unity exposes this control.
 
-<%
+{% highlight C# %}
 
 GraphicsBuffer perObjectData = new GraphicsBuffer(GraphicsBuffer.Target.ConstantBuffer, 10, UnsafeUtility.SizeOf<float4x4>());
 
-%> 
+{% endhighlight %} 
 
 This is how we make a Constant buffer that would fit up to 10 matrices. With [SetData](https://docs.unity3d.com/ScriptReference/GraphicsBuffer.SetData.html) we can supply it with information. Lets also not forget to [Release](https://docs.unity3d.com/ScriptReference/GraphicsBuffer.Release.html) the buffer once we're done with it in OnDisable, otherwise we'll leak GPU memory!
 
@@ -39,7 +39,7 @@ This is how we make a Constant buffer that would fit up to 10 matrices. With [Se
 
 We'll modify our draw call to now give us a List of all ObjectToWorlds for our cubes. Then, when drawing, we'll figure out which are within our frustum, and upload these to the GPU buffer. Finally we ask our GPU to render up to *that* amount of objects. 
 
-<%
+{% highlight C# %}
 
 struct PerObjectData
 {
@@ -67,11 +67,11 @@ void OnEnable()
 	}
 }
 
-%>
+{% endhighlight %}
 
 Within our late update we will now fill a list with our visible transforms, and then update the Constant buffer with that.
 
-<%
+{% highlight C# %}
 void LateUpdate()
 {
 	List<float4x4> visibleObjectToWorlds = new List<float4x4>();
@@ -97,7 +97,7 @@ void LateUpdate()
 	}
 }
 
-%>
+{% endhighlight %}
 
 Notice we are now filling in the instance count, we're asking our GPU to render this mesh once for each visible instance of it. All we now have to do is read out the index in our vertex shader, and use that object to world instead.
 
@@ -105,16 +105,16 @@ Notice we are now filling in the instance count, we're asking our GPU to render 
 
 Now our shader first has to accept the new constant buffer with positions. That looks like this:
 
-<%
+{% highlight C# %}
 CBUFFER_START(_ObjectToWorldBuffer)
 float4x4 objectToWorlds;
 CBUFFER_END
 
-%>
+{% endhighlight %}
 **TODO VERIFY THAT SYNTAX!**
 Unity has difference in platforms handled with macros, see the precompiled source for your specific output. Next; our GPU passes over the index of the current draw (which goes from 0.. instanceCount supplied in the RenderMeshPrimitives) with the shader semantic `SV_InstanceID`.
 
-<%
+{% highlight C# %}
 struct Input
 {
 	uint instanceId : SV_InstanceID;
@@ -122,7 +122,7 @@ struct Input
 
 //in Vert
 Custom_ObjectToWorld = _ObjectToWorldBuffer[i.instanceID];
-%>
+{% endhighlight %}
 
 Press play, and observe great success! With a single draw we can now do all 500 cubes. 
 

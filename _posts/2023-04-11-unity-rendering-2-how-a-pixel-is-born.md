@@ -10,9 +10,9 @@ In Part One we gained an understanding how Unity renders a scene, in this part w
 
 We left off with this rather complicated looking line of code: 
 
-<%
+{% highlight C# %}
 mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, float4(pos, 1.0)))
-%>
+{% endhighlight %}
 
 In order for us to fully appreciate this, we will use exclusively our own inputs. Lets remove the UnityCG.ginc, and go fully custom. This has no practical use, other than being educational. Our shader now looks [like this](https://github.com/TJHeuvel/UnityRenderingTutorial/blob/fbc613344ba4877928501123862c89a250c50ddc/Assets/UnlitShader.shader#L35), naked without UnityCG.cginc, and a todo to fill out the vertex output.  
 
@@ -29,15 +29,15 @@ Our vertex function gets an input of the object space position of each vertex, i
 
 This is why the first step in our new vert method will be, determine the position of this vertex, in world space. 
 
-<%
+{% highlight C# %}
 float4x4 custom_ObjectToWorld;
 
 //in vert
 float4 worldPos = mul(custom_ObjectToWorld, v.vertex);
-%>
+{% endhighlight %}
 
 Thats all it takes, except we stubbornly refuse to use Unity's provided inputs, so we'll have to fill in the custom object to world ourself. Lets make a new script called RenderSystem and attach it to our cube. Lets add ExecuteAlways too, so our views update when we are outside of play mode too.
-<%
+{% highlight C# %}
 
 void LateUpdate()
 {
@@ -46,7 +46,7 @@ void LateUpdate()
     GetComponent<Renderer>().SetPropertyBlock(matProps);
 }
 
-%>
+{% endhighlight %}
 
 We're using a MaterialPropertyBlock, this is something that we can provide *per renderer*. If we'd set this property on the material, or in a shader global variable, we wouldnt be able to have multiple cubes!
 
@@ -76,15 +76,15 @@ Our cube's position is 3 units to the right, in world space. However, in our gam
 
 We can say the we observe objects in the world, relative to our camera. In our shader we can accomplish this by adding:
 
-<%
+{% highlight C# %}
 float4 viewPos = mul(custom_ViewMatrix, worldPos);
-%>
+{% endhighlight %}
 
 Of course we have to pass this new parameter as well, because we're too stubborn to use the builtin `unity_MatrixV`.
 
-<%
+{% highlight C# %}
 Shader.SetGlobalMatrix("custom_ViewMatrix", Camera.main.worldToCameraMatrix);
-%>
+{% endhighlight %}
 
 Observe we deliberately use a global variable here. Each individual object we will render has to have their own position, but we *all* render them with the same camera position. The `worldToCameraMatrix` differs slightly from `worldToLocalMatrix`, namely:
 
@@ -104,13 +104,13 @@ Whew! Lets break this down into more managable chunks. Homogeneous is ancient gr
 This still doesnt make a whole lot of sense, what *exactly* does our GPU want from us? Lets take a peek at [the final step](https://github.com/TJHeuvel/UnityRenderingTutorial/blob/e27ce02cf8e75d28b204d0601f964cf55ff16d70/Assets/UnlitShader.shader#L41) in our shader:
 
 
-<%
+{% highlight C# %}
 	float4 worldPos = mul(custom_ObjectToWorld, v.vertex);
     float4 viewPos = mul(custom_ViewMatrix, worldPos);
     float4 clipPos = mul(custom_ProjectionMatrix, viewPos);
 
     o.vertex = clipPos;
-%>
+{% endhighlight %}
 
 Alright apparently we've entered clip space by multiplying by [the projection matrix](https://docs.unity3d.com/ScriptReference/Camera-projectionMatrix.html). Lets visualise what this actually is with one of the strongest points of Unity, a custom gizmo. Observe in [our gizmo](https://github.com/TJHeuvel/UnityRenderingTutorial/commit/8e87a61b4bb497c2a6a358c2cc912adf67aca37f) we're doing exactly the same as our shader.
 
@@ -125,10 +125,10 @@ Lets look back at our earlier rules. We can clearly see, our cube is is outside 
 Now for perspective division. By dividing the size of our object, with the size of the slice of the frustum, we ask ourself; how much of our view is taken up by our object? When the object is up close, our frustum is small, so the answer is a lot. The more we move back, the bigger the frustum gets, the ratio of object to frustum-slice-size decreases. Perspective!
 If our frustum would ever be of 0 size we'd be dividing by zero, an obviously bad thing. This is why the near clipping plane cannot be set to 0.
 
-<%
+{% highlight C# %}
 //C#:
 Shader.SetGlobalMatrix("custom_ProjectionMatrix", GL.GetGPUProjectionMatrix(Camera.main.projectionMatrix, true));
-%>
+{% endhighlight %}
 
 The projection matrix contains our view frustum, e.g. the 6 planes that make up the conical shape we can see in. This is another 'type' of matrix, it doesnt represent a translation, rotation, scale, but rather the 6 planes of our view frustum. For the sake of this tutorial; our projection matrix is a magical box that fills in the W value to the size of the view frustum, at our objects depth. 
 If this wasnt difficult enough, graphics APIs want matrices in different formats, hence the GL call.
@@ -144,14 +144,14 @@ Alright, thats a lot of dense information, what can we do with this? Lets imagin
 
 We can now identify that we wish to have the same ObjectToWorld, the same ViewMatrix, but rather a different Projection matrix. We can create our own using [float4x4.PerspectiveFov](https://docs.unity3d.com/Packages/com.unity.mathematics@0.0/api/Unity.Mathematics.float4x4.html#Unity_Mathematics_float4x4_PerspectiveFov_System_Single_System_Single_System_Single_System_Single_) or [Matrix4x4.Perspective](https://docs.unity3d.com/ScriptReference/Matrix4x4.Perspective.html). 
 
-<%
+{% highlight C# %}
 void LateUpdate()
 {
 	MaterialPropertyBlock matProps = new MaterialPropertyBlock();
 	matProps.SetMatrix("Unity_MatrixVP", Camera.main.worldToCameraMatrix * GL.GetGPUProjectionMatrix(float4x4.Perspective(45, Camera.main.aspect, Camera.main.near, Camera.main.far), true));
 	GetComponent<Renderer>().SetMaterialPropertyBlock(matProps);
 }
-%> 
+{% endhighlight %} 
 
 This will work with any builtin shader, because more specific properties overwrite less specific ones. We deliberately only want to set the projection matrix on this current object. We can now piece together that the UnityObjectToClip method will use the input we have snuck in, which fixes the field of view at 45.
 
