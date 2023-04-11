@@ -54,84 +54,86 @@ In this scenario, we see that object 0 1 and 3 are visible, while 2 is outside o
 We'll start off where we were with instanced rendering. Rather than each individual draw call having a GraphicsBuffer, we'll make one giant buffer with per instance data.
 
 {% highlight C# %}
-    struct PerObjectData
-    {
-        public float4x4 ObjectToWorld;
-        public Bounds WorldBounds;
-        public int DrawId;
-    }
+struct PerObjectData
+{
+    public float4x4 ObjectToWorld;
+    public Bounds WorldBounds;
+    public int DrawId;
+}
 {% endhighlight %} 
+
 This looks rather similar, except we added a DrawId. This is the index in the indirectargs buffer, the culling compute will need to know which draws count to increase. 
 
 {% highlight C# %}
-    void OnEnable()
+void OnEnable()
+{
+DrawCalls = new List<DrawCall>();
+
+foreach (var renderer in FindObjectsOfType<MeshRenderer>())
+{
+    var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+    var material = renderer.sharedMaterial;
+
+    int index = DrawCalls.FindIndex(d => d.Mesh == mesh && d.Material == material);
+
+    if (index == -1)
     {
-        DrawCalls = new List<DrawCall>();
-
-        foreach (var renderer in FindObjectsOfType<MeshRenderer>())
+        index = DrawCalls.Count;
+        DrawCalls.Add(new DrawCall()
         {
-            var mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
-            var material = renderer.sharedMaterial;
+            Mesh = mesh,
+            Material = material,
+            PerObjectData = new List<PerObjectData>(),
+        });
+    }
 
-            int index = DrawCalls.FindIndex(d => d.Mesh == mesh && d.Material == material);
-
-            if (index == -1)
-            {
-                index = DrawCalls.Count;
-                DrawCalls.Add(new DrawCall()
-                {
-                    Mesh = mesh,
-                    Material = material,
-                    PerObjectData = new List<PerObjectData>(),
-                });
-            }
-
-            DrawCalls[index].PerObjectData.Add(new PerObjectData() { ObjectToWorld = renderer.transform.localToWorldMatrix, WorldBounds = renderer.bounds, DrawId = index });
-        }
+    DrawCalls[index].PerObjectData.Add(new PerObjectData() { ObjectToWorld = renderer.transform.localToWorldMatrix, WorldBounds = renderer.bounds, DrawId = index });
+}
 {% endhighlight %}
 This mostly looks similar to what we have before, except we fill in the DrawId.
 
 Next up we build the indirect arguments, filling in information about our (sub)mesh.
+
 {% highlight C# %}
+GraphicsBuffer.IndirectDrawIndexedArgs[] args = new GraphicsBuffer.IndirectDrawIndexedArgs[DrawCalls.Count];
 
-        GraphicsBuffer.IndirectDrawIndexedArgs[] args = new GraphicsBuffer.IndirectDrawIndexedArgs[DrawCalls.Count];
+uint totalCount = 0;
+for (int i = 0; i < DrawCalls.Count; i++)
+{
+    var subMeshInfo = DrawCalls[i].Mesh.GetSubMesh(0);
+    args[i] = new GraphicsBuffer.IndirectDrawIndexedArgs()
+    {
+        baseVertexIndex = (uint)subMeshInfo.baseVertex,
+        startIndex = (uint)subMeshInfo.indexStart,
+        indexCountPerInstance = (uint)subMeshInfo.indexCount,
 
-        uint totalCount = 0;
-        for (int i = 0; i < DrawCalls.Count; i++)
-        {
-            var subMeshInfo = DrawCalls[i].Mesh.GetSubMesh(0);
-            args[i] = new GraphicsBuffer.IndirectDrawIndexedArgs()
-            {
-                baseVertexIndex = (uint)subMeshInfo.baseVertex,
-                startIndex = (uint)subMeshInfo.indexStart,
-                indexCountPerInstance = (uint)subMeshInfo.indexCount,
+        //Since our perobjectdata buffer is contiguous over *all* meshes, we make sure the instanceIds are offset too.
+        startInstance = totalCount
+    };
 
-                //Since our perobjectdata buffer is contiguous over *all* meshes, we make sure the instanceIds are offset too.
-                startInstance = totalCount
-            };
-
-            totalCount += (uint)DrawCalls[i].PerObjectData.Count;
-        }
+    totalCount += (uint)DrawCalls[i].PerObjectData.Count;
+}
 {% endhighlight %}
+
 The important part to understand is the startInstance. Lets say we have 3 cubes and 4 spheres, we can fill in all 7 elements in a single per-object-data buffer, and make sure the draw for our 4 spheres starts at instance 4 so its offset correctly.
 
 Now we're ready to make the final buffers, fill in the per object data and setup the indirect-args buffers.
 {% highlight C# %}
 
-        perObjectDataBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<PerObjectData>());
-        visibleIndicesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<uint>());
+perObjectDataBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<PerObjectData>());
+visibleIndicesBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, (int)totalCount, UnsafeUtility.SizeOf<uint>());
 
-        //Upload all per object data
-        for (int i = 0; i < DrawCalls.Count; i++)
-        {
-            perObjectDataBuffer.SetData(DrawCalls[i].PerObjectData, 0, (int)args[i].startIndex, DrawCalls[i].PerObjectData.Count);
-        }
+//Upload all per object data
+for (int i = 0; i < DrawCalls.Count; i++)
+{
+    perObjectDataBuffer.SetData(DrawCalls[i].PerObjectData, 0, (int)args[i].startIndex, DrawCalls[i].PerObjectData.Count);
+}
 
-        clearIndirectArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.CopySource, DrawCalls.Count, GraphicsBuffer.IndirectDrawIndexedArgs.size);
-        indirectArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.CopyDestination, DrawCalls.Count, GraphicsBuffer.IndirectDrawIndexedArgs.size);
+clearIndirectArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.CopySource, DrawCalls.Count, GraphicsBuffer.IndirectDrawIndexedArgs.size);
+indirectArgsBuffer = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.CopyDestination, DrawCalls.Count, GraphicsBuffer.IndirectDrawIndexedArgs.size);
 
-        //Set the default clear state once, no need to update indirectargsbuffer because that will be done every frame
-        clearIndirectArgsBuffer.SetData(args);
+//Set the default clear state once, no need to update indirectargsbuffer because that will be done every frame
+clearIndirectArgsBuffer.SetData(args);
 {% endhighlight %} 
 
 One thing not mentioned in our approach above is the need to clear. Our compute will add one for each visible object to the instanceCount. If we dont reset this to 0 its bad! What we'll do is have two buffers, one pristine clean state where the instancecount is 0, and one final state. At the beginning of our frame we copy the clean into the dirty, and we're done.  
