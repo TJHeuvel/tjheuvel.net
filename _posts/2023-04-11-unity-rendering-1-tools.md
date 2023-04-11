@@ -78,7 +78,7 @@ This flat view also allows us to find out exactly what builtin methods look like
 
 With this information, we can see exactly what our Vertex shader does. It outputs a float4 value called vertex by doing the following transform:
 
-{% highlight C# {% endhighlight %}
+{% highlight C# %}
 // Tranforms position from object to homogenous space
 inline float4 UnityObjectToClipPos(in float3 pos)
 {
@@ -93,6 +93,6 @@ v2f vert (appdata v)
     o . uv = (v . uv . xy * _MainTex_ST . xy + _MainTex_ST . zw);
     return o;
 }
-%>
+{% endhighlight %} 
 
 In the next part of our tutorial we will dive into this confusing looking piece of code!
