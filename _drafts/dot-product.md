@@ -36,12 +36,15 @@ dot(fwd, velocity) forward velocity
 We might want to know if an object is within the view frustum of our camera. Roughly, our object is invisible if for any frustum plane its entirely behind it. 
 
 ## Whats a plane?
-An infinite flat surface, though in our example it can help to think of it as a line. A line has a start and an end, a Ray has a start and a direction, without an explicit distance. Planes are taking this one step further, a line without a start and end, going on infinitely. 
+
+An infinite flat surface, that divides a space into two half-spaces, in front and behind. In our our example it can help to think of it as an infinite line. A regular line has a start and an end, a ray has a start and a direction that goes on infinitely. Planes are taking this one step further, a line without a start and end, going on infinitely, with only a direction and offset distance. 
+
 
 Whenever i try to understand, i simplify. Lets forget about our camera for a moment, and observe this plane. This plane is at 0,0,0, and points squarely up. Rememeber we store the normal, in this case 0,1,0.
-Whats the distance of a point, say 2,5,0 to our line? Well we only care about the Y value, the rest can be discarded. We want 0% of x, 100% of y, and 0% of z.
 
-> dot(norm, pos)
+Whats the distance of a point, say 2,5,0 to our line? Well we only care about the Y value, the rest can be discarded. We want 0% of x, 100% of y, and 0% of z. Lets go diagonal, we want 50% of x, and 50% of y. We can understand x*.5 + y*.5 gives our result, hence:
+
+> distanceToPlane = dot(plane-normal, pos)
 
 However our camera can also move, our line can be offset. This is a simple addition, we say we dont care about the distance. Distance here is signed, be aware if its origin-to-plane, or plane-to-origin!
 
