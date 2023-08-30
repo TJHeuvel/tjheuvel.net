@@ -1,0 +1,65 @@
+---
+title:  "Game Math: Dot product"
+date:   2023-08-30 20:00:00 +0100
+categories: programming math vector gamedev
+---
+
+Big brain Michal Abrash wrote Game Programming Black Book, in it he writes:
+
+TODO FIND QUOTE BUT DOT PRODUCT GOOD
+
+Lets explore the dot product!
+
+# What is?
+> a.x * b.x + a.y * b.y
+In as many dimensions. We all know this
+
+# Vector Length
+We know in our favourite engine we can do something like this to get the distance between two points:
+
+> (b - a).magnitude
+
+Those who paid any attention in highschool might also remember what the Pythagoras is going on, the good old a^2+b^2=c^2. Why does this appear in this article about the dot product?
+
+```
+	d = b-a;
+	dot(d, d)
+```
+Well hot damn, pythagoras is a dot! We can appreciate how often this is done to see its fundamental.
+
+# Projections
+
+dot(fwd, velocity) forward velocity
+
+# Frustum Culling
+
+We might want to know if an object is within the view frustum of our camera. Roughly, our object is invisible if for any frustum plane its entirely behind it. 
+
+## Whats a plane?
+An infinite flat surface, though in our example it can help to think of it as a line. A line has a start and an end, a Ray has a start and a direction, without an explicit distance. Planes are taking this one step further, a line without a start and end, going on infinitely. 
+
+Whenever i try to understand, i simplify. Lets forget about our camera for a moment, and observe this plane. This plane is at 0,0,0, and points squarely up. Rememeber we store the normal, in this case 0,1,0.
+Whats the distance of a point, say 2,5,0 to our line? Well we only care about the Y value, the rest can be discarded. We want 0% of x, 100% of y, and 0% of z.
+
+> dot(norm, pos)
+
+However our camera can also move, our line can be offset. This is a simple addition, we say we dont care about the distance. Distance here is signed, be aware if its origin-to-plane, or plane-to-origin!
+
+> dot(norm, pos) + distance
+
+
+## Actually behind
+We can now get the distance to the object, and know when the *center* is behind. However we care about when the entire object, its bounds, are past. What we really want to know is how much bounds is there in this normal dir, project the bounds on the normal!
+
+However this only works with absolute-normal, i.e. positive. The size of (-1, 0, ) and (1, 0, 0) should be the same, and positive. Likewise for (-.5, .5, 0) and (.5, .5, 0). This latter case explains why we need to do absulte of the normal rather than the result, plus minus is minus.
+
+> rad = dot(abs(norm), bounds)
+
+Meaning we end up:
+
+```
+distanceToPlane = dot(norm,pos)
+projectedObjSize = dot(abs(norm), bounds)
+
+return distanceToPlane - projectedObjSize > 0;
+```
