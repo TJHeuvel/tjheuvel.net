@@ -4,7 +4,7 @@ date:   2023-08-30 20:00:00 +0100
 categories: programming math vector gamedev
 ---
 
-After working on Doom, Michal Abrash wrote Graphics Programming Black Book, detailing all his knowledge. On the topic of math, [he's quite clear](https://www.jagregory.com/abrash-black-book/#the-fundamentals-of-the-math-behind-3-d-graphics):
+After working on Quake, Michal Abrash wrote Graphics Programming Black Book, detailing all his knowledge. On the topic of math, [he's quite clear](https://www.jagregory.com/abrash-black-book/#the-fundamentals-of-the-math-behind-3-d-graphics):
 
 > .. The truth is, there’s not all that much to 3-D math... You really need only two basic math tools beyond simple arithmetic: dot products and cross products, and really mostly just the former. 
 
