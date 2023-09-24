@@ -4,17 +4,23 @@ date:   2023-08-30 20:00:00 +0100
 categories: programming math vector gamedev
 ---
 
-Big brain Michal Abrash wrote Game Programming Black Book, in it he writes:
+After working on Doom, Michal Abrash wrote Graphics Programming Black Book, detailing all his knowledge. On the topic of math, [he's quite clear](https://www.jagregory.com/abrash-black-book/#the-fundamentals-of-the-math-behind-3-d-graphics):
 
-TODO FIND QUOTE BUT DOT PRODUCT GOOD
+> .. The truth is, there’s not all that much to 3-D math... You really need only two basic math tools beyond simple arithmetic: dot products and cross products, and really mostly just the former. 
 
-Lets explore the dot product!
+Clearly since then games have gotten much more complex, but the simple dot product still lies at the heart of many algoritms. Lets explore the dot product!
 
-# What is?
+# What is the dot product?
+
+The dot product of two vectors produces a scalar, i.e. a single 'float' value. Its calculated by summing the multiplication of each vector component, as such:
+
 > a.x * b.x + a.y * b.y
-In as many dimensions. We all know this
 
-# Vector Length
+The range is proportional to the sum of the input length
+
+# What can you use it for?
+
+## Vector Length
 We know in our favourite engine we can do something like this to get the distance between two points:
 
 > (b - a).magnitude
