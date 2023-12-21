@@ -20,6 +20,12 @@ The range is proportional to the sum of the input length
 
 # What can you use it for?
 
+## Angles between unit vectors
+Most gamedevelopers are familiar with this most, use the dot product of two direction vectors and get out this magic value thats 1 when they point the same way, and -1 when they are opposite.
+That definition will work well for us 90% of the time, however it can help to broaden our view a bit. 
+
+The value thats returned is the Cosine of the angle between the vectors. This means the angle in degrees would be calculated as: `degrees(acos(dot(a,b)))`. This is helpful, lets say you want to give your designers a slider that does use degrees. Rather than calculating the angle every time, you can simply calculate the cosine of the input once and compare that to the dot. 
+
 ## Vector Length
 We know in our favourite engine we can do something like this to get the distance between two points:
 
@@ -31,7 +37,7 @@ Those who paid any attention in highschool might also remember what the Pythagor
 	d = b-a;
 	dot(d, d)
 ```
-Well hot damn, pythagoras is a dot! We can appreciate how often this is done to see its fundamental.
+Turns out, pythagoras is a dot product! We can appreciate how often this is done to see its fundamental.
 
 # Projections
 
